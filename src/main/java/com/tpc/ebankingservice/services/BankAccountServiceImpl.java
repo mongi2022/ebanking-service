@@ -1,22 +1,23 @@
 package com.tpc.ebankingservice.services;
 
+import com.tpc.ebankingservice.dtos.CustomerDTO;
 import com.tpc.ebankingservice.entities.*;
 import com.tpc.ebankingservice.enums.OperationType;
 import com.tpc.ebankingservice.exceptions.BalanceNotSufficientExeption;
 import com.tpc.ebankingservice.exceptions.BankAccountNotFoundException;
 import com.tpc.ebankingservice.exceptions.CustomerNotFoundException;
+import com.tpc.ebankingservice.mappers.BankAccountMapperImpl;
 import com.tpc.ebankingservice.repositories.AccountOperationRepository;
 import com.tpc.ebankingservice.repositories.BankAccountRepository;
 import com.tpc.ebankingservice.repositories.CustomerRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -25,11 +26,13 @@ public class BankAccountServiceImpl implements BankAccountService{
     private BankAccountRepository bankAccountRepository;
     private CustomerRepository customerRepository;
     private AccountOperationRepository accountOperationRepository;
+    private BankAccountMapperImpl bankAccountMapper;
    // Logger log= LoggerFactory.getLogger(this.getClass().getName());
-    public BankAccountServiceImpl(BankAccountRepository bankAccountRepository, CustomerRepository customerRepository, AccountOperationRepository accountOperationRepository) {
+    public BankAccountServiceImpl(BankAccountRepository bankAccountRepository, CustomerRepository customerRepository, AccountOperationRepository accountOperationRepository, BankAccountMapperImpl bankAccountMapper) {
         this.bankAccountRepository = bankAccountRepository;
         this.customerRepository = customerRepository;
         this.accountOperationRepository = accountOperationRepository;
+        this.bankAccountMapper = bankAccountMapper;
     }
 
     @Override
@@ -78,8 +81,12 @@ public class BankAccountServiceImpl implements BankAccountService{
 
 
     @Override
-    public List<Customer> listCustomers() {
-        return customerRepository.findAll();
+    public List<CustomerDTO> listCustomers() {
+
+        List<Customer> customers=customerRepository.findAll();
+       List<CustomerDTO> customerDTOS= customers.stream().map(cust->bankAccountMapper.fromCustomer(cust)).toList();
+
+        return customerDTOS;
     }
 
     @Override
@@ -121,5 +128,9 @@ public class BankAccountServiceImpl implements BankAccountService{
     public void transfer(String accountIdSource, String accountIdDescription, double amount) throws BankAccountNotFoundException, BalanceNotSufficientExeption {
     debit(accountIdSource,amount,"transfert to"+accountIdDescription);
     credit(accountIdDescription,amount,"transfert from"+accountIdSource);
+    }
+    @Override
+   public List<BankAccount> bankAccountList(){
+       return bankAccountRepository.findAll();
     }
 }
